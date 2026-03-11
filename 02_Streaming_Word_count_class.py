@@ -24,6 +24,8 @@ class batchWC():
 		from pyspark.sql.functions import trim ,lower
 		return (
 			raw_data.select(lower(trim(raw_data.word)).alias("word"))
+					.where("word is not null")
+					.where(" word rlike '[a-z]'")
 		)
 	
 	def getWordCount(self , qualitiy_data):
