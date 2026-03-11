@@ -1,12 +1,3 @@
-from pyspark.sql import SparkSession
+import subprocess
 
-spark = SparkSession.builder\
-		 .appName("Word_count")\
-		 .master("local[*]")\
-		 .enableHiveSupport()\
-		 .getOrCreate()
-
-
-spark.sql("select * from emp")
-
-
+subprocess.run(["rm -rf /home/hrithik_poojary/spark_meta/spark-warehouse/emp"] ,shell =True)

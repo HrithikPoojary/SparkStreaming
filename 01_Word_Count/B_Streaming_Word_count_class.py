@@ -3,7 +3,7 @@ class batchWC():
 		self.dase_dir_date = '/data'
 
 	def spark(self):
-		from pysaprk.sql import SparkSession 
+		from pyspark.sql import SparkSession 
 		return ( SparkSession.builder
 							 .appName("Demo")
 							 .master('local[2]')
@@ -14,7 +14,7 @@ class batchWC():
 		df = (
 			spark.read.format("text")
 					  .option("lineSep" , "true")
-					  .load(f"{self.dase_dir_date}/txt/")
+					  .load(f"{self.dase_dir_date}/test/")
 		)
 		return (
 			df.select(explode(split(df.value , " ")).alias("word"))
@@ -42,8 +42,10 @@ class batchWC():
 		)	
 
 	def wordCount(self):
+		print("Data Inserting to EMP Execution Started")
 		spark = self.spark()
-		raw_data = getRawData(spark)
-		quality_data = getQualityData(raw_data)
-		grouped_data = getWordCount(qualitiy_data)
-		overwriteWordCount(grouped_data)
+		raw_data = self.getRawData(spark)
+		quality_data = self.getQualityData(raw_data)
+		grouped_data = self.getWordCount(quality_data)
+		self.overwriteWordCount(grouped_data)
+		print("EMP Created Successfully")
