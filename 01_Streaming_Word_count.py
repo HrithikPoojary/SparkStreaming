@@ -28,7 +28,7 @@ quality_words = raw_words.select(lower(trim(raw_words.word)).alias("word"))\
 						
 wordCounts = quality_words.groupBy("word").count()
 
-wordCounts.write\
+wordCounts.write.write("parquet")\
 		  .mode("overwrite")\
 		  .saveAsTable("emp")
 	
