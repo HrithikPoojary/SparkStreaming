@@ -37,7 +37,7 @@ class batchWCTestSuite():
         assert actual_value == expected_result , f"Test failed Actual is {actual_value}"
 
     def runtests(self):
-        from B_Streaming_Word_count_class import batchWC
+        from B_Batch_Word_count_class import batchWC
         import subprocess
         self.cleanUpTest()
         wc = batchWC()
