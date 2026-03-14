@@ -70,7 +70,6 @@ class StreamWCTest():
         self.assertResult(37)
         query.stop()
         print("Third Iteration Completed")
-
         
 
 st = StreamWCTest()
