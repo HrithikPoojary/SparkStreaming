@@ -1,80 +1,75 @@
 class StreamWC():
-
     def __init__(self):
         self.base_dir = "/data"
+        self.output_path = "file:///home/hrithik_poojary/spark_meta/spark_warehouse/emp"
+        self.checkpoint = "file:///home/hrithik_poojary/spark_meta/spark_warehouse/checkpoint/wordcount"
+        self.spark_session = None
 
     def spark(self):
         from pyspark.sql import SparkSession
-        from delta import configure_spark_with_delta_pip
 
-        # Stop existing session if present
-        try:
-            SparkSession.getActiveSession().stop()
-        except:
-            pass
+        # Only create a new session if one doesn't exist
+        jar_dir = "/home/hrithik_poojary/jars"
+        delta_core = f"{jar_dir}/delta-spark_2.12-3.2.0.jar"
+        delta_storage = f"{jar_dir}/delta-storage-3.2.0.jar"
+        cp_jars = f"{delta_core}:{delta_storage}"
+        spark_jars = f"{delta_core},{delta_storage}"
 
-        builder = (
-            SparkSession.builder
-            .appName("Demo")
+        self.spark_session = (SparkSession.builder
+            .appName("StreamingDelta")
             .master("local[2]")
-            .config("spark.sql.extensions",
-                    "io.delta.sql.DeltaSparkSessionExtension")
-            .config("spark.sql.catalog.spark_catalog",
-                    "org.apache.spark.sql.delta.catalog.DeltaCatalog")
-        )
+            .config("spark.driver.extraClassPath", cp_jars)
+            .config("spark.executor.extraClassPath", cp_jars)
+            .config("spark.jars", spark_jars)
+            .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+            .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+            .config("spark.sql.adaptive.enabled", "false")
+            .getOrCreate())
 
-        spark = configure_spark_with_delta_pip(builder).getOrCreate()
-        return spark
+        return self.spark_session
+
 
     def getRawData(self, spark):
         from pyspark.sql.functions import split, explode
-
-        df = (
-            spark.readStream
-            .format("text")
-            .load(f"{self.base_dir}/test/")
-        )
-
-        return df.select(
-            explode(split(df.value, " ")).alias("word")
+        return spark.readStream.format("text").load(f"{self.base_dir}/test/").select(
+            explode(split("value", " ")).alias("word")
         )
 
     def getQualityData(self, raw_data):
-        from pyspark.sql.functions import trim, lower
-
-        return (
-            raw_data
-            .select(lower(trim("word")).alias("word"))
-            .where("word is not null")
-            .where("word rlike '[a-z]'")
-        )
+        from pyspark.sql.functions import trim, lower, col
+        return raw_data.select(lower(trim(col("word"))).alias("word")) \
+                       .where("word != '' AND word IS NOT NULL") \
+                       .where(col("word").rlike("[a-z]"))
 
     def getWordCount(self, quality_data):
-        return (
-            quality_data
-            .groupBy("word")
-            .count()
-        )
+        return quality_data.groupBy("word").count()
 
     def overwriteWordCount(self, grouped_data):
+        # IMPORTANT: Removed spark.stop() logic entirely.
+        return (grouped_data.writeStream
+                .format("delta")
+                .outputMode("complete")
+                .option("checkpointLocation", f"{self.checkpoint}")
+                .start(self.output_path))
 
-        return (
-            grouped_data.writeStream
-            .format("delta")
-            .outputMode("complete")
-            .option(
-                "checkpointLocation",
-                "file:///home/hrithik_poojary/spark_meta/spark_warehouse/check_point/word_count"
-            )
-            .start("file:///home/hrithik_poojary/spark_meta/spark_warehouse/emp")
-        )
+        # Optional: Add a console logger to see live updates
+        # console_query = grouped_data.writeStream \
+        #     .format("console") \
+        #     .outputMode("complete") \
+        #     .start()
+
+
 
     def wordCount(self):
-        print("Streaming Data Inserting to EMP Execution Started")
-        spark = self.spark()
-        raw_data = self.getRawData(spark)
+        print("Streaming Job Starting...")
+        spark_session = self.spark()
+        raw_data = self.getRawData(spark_session)
         quality_data = self.getQualityData(raw_data)
         grouped_data = self.getWordCount(quality_data)
         squery = self.overwriteWordCount(grouped_data)
-        print("EMP Created Successfully")
+        
+        #print(f"Query Started: {squery.id}")
         return squery
+
+sw = StreamWC()
+sw.wordCount()
