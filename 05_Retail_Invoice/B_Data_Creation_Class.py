@@ -1,8 +1,8 @@
 class StreamData():
     def __init__(self):
         self.input_path = '/data/json/'
-        self.output_path = ''
-        self.checkpoint_path = ''
+        self.output_path = '/tmp/delta-retail'
+        self.checkpoint_path = '/tmp/checkpoint-retail'
 
         from pyspark.sql import SparkSession
         from pyspark.sql.types import StructType , StructField , StringType , IntegerType , FloatType ,ArrayType , MapType
@@ -60,7 +60,7 @@ class StreamData():
 
     def getRawData(self):
         return (
-            self.spark.read.format("json")
+            self.spark.readStream.format("json")
                             .schema(self.data_schema)
                             .load(path = self.input_path)
         )
@@ -98,7 +98,7 @@ class StreamData():
     def overWriteFlatten(self,flattenDf):
         return (
                     flattenDf.writeStream.format("delta")
-                                         .outputMode("complete")
+                                         .outputMode("append")
                                          .option("checkpointLocation" , self.checkpoint_path)
                                          .start(self.output_path)
         )
@@ -106,7 +106,10 @@ class StreamData():
     def main(self):
         raw = self.getRawData()
         flat = self.flatten(raw)
-        self.showprintschema(flat)
-    
-sc = StreamData()
-sc.main()
+        query = self.overWriteFlatten(flat)
+        query.processAllAvailable()
+        query.stop()
+
+if __name__ == '__main__':  
+    sc = StreamData()
+    sc.main()

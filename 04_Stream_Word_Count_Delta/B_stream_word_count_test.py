@@ -41,35 +41,32 @@ class StreamWCTest():
         import time
         self.cleanUpFolder()
         swt = StreamWC()
+        query = swt.mainWordCount()
         self.spark = swt.spark 
 
 
         print("First Iteration")
         self.ingestData(1)
-        query = swt.mainWordCount()
         query.processAllAvailable()
         time.sleep(15)
         self.assertResult(25)
-        query.stop()
         print("First Iteration Completed")
 
         print("Second Iteration")
         self.ingestData(2)
-        query = swt.mainWordCount()
         query.processAllAvailable()
         time.sleep(15)
         self.assertResult(32)
-        query.stop()
         print("Second Iteration Completed")
 
         print("Third Iteration")
         self.ingestData(3)
-        query = swt.mainWordCount()
         query.processAllAvailable()
         time.sleep(15)
         self.assertResult(37)
-        query.stop()
         print("Third Iteration Completed")
+
+        query.stop()
         
 
 st = StreamWCTest()
