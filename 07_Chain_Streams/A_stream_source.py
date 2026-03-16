@@ -94,13 +94,14 @@ class Brown():
 class Silver():
     def __init__(self):
         self.checkpoint_path = '/tmp/checkpoint-invoice_sl/'
-        self.output_path = '/tmp/delta-invoice_sl/' 
+        self.output_path = '/tmp/delta-invoice_sl/'
+        self.input_path = '/tmp/delta-invoice_bzz/' 
 
     def readDataFrame(self):
         return (
 
             spark.readStream.format("delta")
-                            .load(path = '/tmp/delta-invoice_bzz/')
+                            .load(path = self.input_path)
         )
 
     def explodeDF(self , rawdf):

@@ -79,6 +79,16 @@ df = df.withColumns(
                                     }
                                 ).drop('InvoiceLineItems' , 'DeliveryAddress')
 
+df = df.withColumns(
+                                    {
+                                        "ItemCode" : expr("LineItems.ItemCode"),
+                                        "ItemDescription" : expr("LineItems.ItemDescription"),
+                                        "ItemPrice" : expr("LineItems.ItemPrice"),
+                                        "ItemQty" : expr("LineItems.ItemQty"),
+                                        "TotalValue" : expr("LineItems.TotalValue")
+                                    }
+                                ).drop('InvoiceLineItems' , 'DeliveryAddress')
+
 df.selectExpr("count(*) as count").show()
 
 
