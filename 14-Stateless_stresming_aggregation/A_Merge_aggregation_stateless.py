@@ -85,7 +85,7 @@ class Brownze:
                                  .queryName("brownze-ingestion")
                                  .outputMode("append")
                                  .option("checkpointLocation" , '/tmp/checkpoint_stream_agg_bz')
-                                 .toTable('delta_stream_agg_bz')
+                                 .toTable('stateless_agg_bz1')
         )
 
         print("Done With The Brownze")
@@ -98,7 +98,7 @@ class Gold():
 
     def readBronze(self):
         return (
-            spark.readStream.table('delta_stream_agg_bz')
+            spark.readStream.table('stateless_agg_bz1')
             )
         
     def getAggregates(self,readbrowndf):
@@ -114,7 +114,7 @@ class Gold():
         aggregate_df = self.getAggregates(invoices_df)
         aggregate_df.createOrReplaceTempView("source_batch")
         merge_statement = """
-                        merge into stateless_agg t
+                        merge into stateless_agg1 t
                         using source_batch s
                         on t.CustomerCardNo = s.CustomerCardNo
                         when matched then
@@ -123,7 +123,7 @@ class Gold():
                         when not matched then
                         insert *
         """
-        batchdf.sparkSession.sql(merge_statement) 
+        invoices_df.sparkSession.sql(merge_statement) 
 
     def saveResult(self,invoices_df):
         return (

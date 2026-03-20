@@ -9,8 +9,9 @@ class StreamingAggTestSuite:
         subprocess.run(['hadoop' , 'fs' ,"-rm" , "-r" , "/data/test/json/*"])
         subprocess.run(['hadoop' , 'fs' , "-rm" , "-r" , f"/tmp/checkpoint_stream_agg_bz/*"])
         subprocess.run(['hadoop' , 'fs' , "-rm" , "-r" , f"/tmp/checkpoint_stream_agg_gl/*"])
-        subprocess.run(['hadoop' , 'fs' , "-rm" , "-r" , f"/user/hive/warehouse/delta_stream_agg_b*"])
-        subprocess.run("bash -c 'rm -rf /home/hrithik_poojary/Spark_Streaming/SparkStreaming/13_Straming_update/spark-warehouse/{*,.*}'", shell = True)
+        subprocess.run(['hadoop' , 'fs' , "-rm" , "-r" , f"/user/hive/warehouse/stateless_*"])
+        subprocess.run("bash -c 'rm -rf /home/hrithik_poojary/Spark_Streaming/SparkStreaming/14-Stateless_stresming_aggregation/spark-warehouse/{*,.*}'", shell = True)
+        subprocess.run("bash -c 'rm -rf /home/hrithik_poojary/Spark_Streaming/SparkStreaming/14-Stateless_stresming_aggregation/metastore_db/{*,.*}'", shell = True)
         print("Clean Up is completed...............")
 
 
@@ -20,27 +21,27 @@ class StreamingAggTestSuite:
         print(f"Ingestion is completed for the {itr}")
 
     def waitforMicroBatch(self ,sleep=60):
-        print("Waiting for 30 seconds")
+        print("Waiting for 60 seconds")
         import time 
         time.sleep(sleep)
-        print("Completed 30 Seconds.................")
+        print("Completed 60 Seconds.................")
 
     def assertResultBrownze(self , expected_result):
 
-        actual_result = self.spark.sql("select count(*) from delta_stream_agg_bz").collect()[0][0]
+        actual_result = self.spark.sql("select count(*) from stateless_agg_bz1").collect()[0][0]
         assert expected_result == actual_result , f"Failed Due to Mismatch Actual - {actual_result}  Expected - {expected_result}"
 
     def assertResultGold(self , expected_result):
         
-        actual_result = self.spark.sql("select totalAmount from delta_stream_agg_gl1 where CustomerCardNo=='2262471989'").collect()[0][0]
+        actual_result = self.spark.sql("select totalAmount from stateless_agg1 where CustomerCardNo=='2262471989'").collect()[0][0]
 
         assert expected_result == actual_result , f"Failed Due to Mismatch Actual - {actual_result}  Expected - {expected_result}"
 
 
     def runtestCases(self):
-        from A_update_stream import Brownze , Gold ,spark 
+        from A_Merge_aggregation_stateless import Brownze , Gold ,spark 
         self.cleanUP()
-        spark.sql("create table if not exists stateless_agg (CustomerCardNo string , TotalAmount int , TotalPoints float ) USING DELTA")
+        spark.sql("create table if not exists stateless_agg1 (CustomerCardNo string , TotalAmount int , TotalPoints float ) USING DELTA")
 
         bz = Brownze()
         bzQuery = bz.process()
